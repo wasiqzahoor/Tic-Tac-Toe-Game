@@ -1,0 +1,215 @@
+<!-- Tic Tac Toe Game -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic Tac Toe</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(120deg, #8e44ad, #3498db);
+            color: #ffffff;
+        }
+
+        .container {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            grid-gap: 10px;
+            margin: 20px auto;
+        }
+
+        .cell {
+            width: 100px;
+            height: 100px;
+            background-color: #ffffff;
+            border-radius: 5px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2rem;
+            font-weight: bold;
+            color: #2c3e50;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+
+        .cell:hover {
+            background-color: #ecf0f1;
+            transform: scale(1.1);
+        }
+
+        .winner {
+            font-size: 1.8rem;
+            margin-top: 20px;
+            font-weight: bold;
+        }
+
+        button {
+            background-color: #e74c3c;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 10px 5px;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #c0392b;
+        }
+
+        .player-input {
+            margin: 10px 0;
+        }
+
+        .player-input label {
+            font-size: 1.2rem;
+        }
+
+        .error {
+            color: red;
+            font-size: 1rem;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Tic Tac Toe</h1>
+        <div class="player-input">
+            <label>Player X Name: <input type="text" id="playerX" placeholder="Enter Player X Name" required></label><br>
+            <label>Player O Name: <input type="text" id="playerO" placeholder="Enter Player O Name" required></label><br>
+            <button onclick="startGame()">Start Game</button>
+            <div class="error" id="error"></div>
+        </div>
+        <div class="board" id="board" style="display:none">
+            <!-- Cells dynamically created by JavaScript -->
+        </div>
+        <div class="winner" id="winner"></div>
+        <button onclick="resetGame()" style="display:none" id="restartButton">Restart Game</button>
+        <div class="winner" id="score"></div>
+    </div>
+
+    <script>
+        const board = document.getElementById('board');
+        const winnerDiv = document.getElementById('winner');
+        const restartButton = document.getElementById('restartButton');
+        const scoreDiv = document.getElementById('score');
+        const errorDiv = document.getElementById('error');
+        let currentPlayer = 'X';
+        let gameActive = true;
+        let gameState = Array(9).fill(null);
+        let playerXName = '';
+        let playerOName = '';
+        let scores = { X: 0, O: 0, Draw: 0 };
+
+        // Winning combinations
+        const winningConditions = [
+            [0, 1, 2], [3, 4, 5], [6, 7, 8], // Rows
+            [0, 3, 6], [1, 4, 7], [2, 5, 8], // Columns
+            [0, 4, 8], [2, 4, 6] // Diagonals
+        ];
+
+        function startGame() {
+            playerXName = document.getElementById('playerX').value.trim();
+            playerOName = document.getElementById('playerO').value.trim();
+
+            if (!playerXName || !playerOName) {
+                errorDiv.textContent = 'Both player names are required!';
+                return;
+            }
+
+            errorDiv.textContent = '';
+            document.querySelector('.player-input').style.display = 'none';
+            board.style.display = 'grid';
+            restartButton.style.display = 'inline-block';
+            winnerDiv.textContent = '';
+            updateScore();
+            createBoard();
+        }
+
+        // Create the cells dynamically
+        function createBoard() {
+            board.innerHTML = '';
+            gameState = Array(9).fill(null); // Reset the game state
+            gameActive = true;
+            currentPlayer = 'X';
+            gameState.forEach((_, index) => {
+                const cell = document.createElement('div');
+                cell.classList.add('cell');
+                cell.setAttribute('data-index', index);
+                cell.addEventListener('click', handleCellClick);
+                board.appendChild(cell);
+            });
+        }
+
+        // Handle cell click event
+        function handleCellClick(event) {
+            const index = event.target.getAttribute('data-index');
+
+            if (!gameActive || gameState[index]) return;
+
+            gameState[index] = currentPlayer;
+            event.target.textContent = currentPlayer;
+
+            if (checkWinner()) {
+                gameActive = false;
+                winnerDiv.textContent = `${currentPlayer === 'X' ? playerXName : playerOName} Wins!`;
+                scores[currentPlayer]++;
+                if (scores[currentPlayer] === 5) {
+                    winnerDiv.textContent = `${currentPlayer === 'X' ? playerXName : playerOName} is the Champion!`;
+                }
+                updateScore();
+            } else if (gameState.every(cell => cell)) {
+                gameActive = false;
+                winnerDiv.textContent = 'It\'s a Draw!';
+                scores.Draw++;
+                updateScore();
+            } else {
+                currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+            }
+        }
+
+        // Check for a winner
+        function checkWinner() {
+            return winningConditions.some(combination => {
+                const [a, b, c] = combination;
+                return gameState[a] && gameState[a] === gameState[b] && gameState[a] === gameState[c];
+            });
+        }
+
+        // Update the score display
+        function updateScore() {
+            scoreDiv.textContent = `${playerXName}: ${scores['X']} | ${playerOName}: ${scores['O']} | Draws: ${scores['Draw']}`;
+        }
+
+        // Reset the game
+        function resetGame() {
+            createBoard();
+            winnerDiv.textContent = '';
+        }
+
+        // Initialize the game
+        createBoard();
+    </script>
+</body>
+</html>
